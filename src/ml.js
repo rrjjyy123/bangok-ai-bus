@@ -209,11 +209,12 @@ export class Classifier {
     return { label: this.labels[best], conf: o[best], probs };
   }
 
-  // 가장 비슷한 학습 사진 k장
-  nearest(feat, k = 3) {
+  // 가장 비슷한 학습 사진 k장(label을 주면 그 이름표 사진 중에서만)
+  nearest(feat, k = 3, label = null) {
     const z = this.standardize(feat);
     let zn = 0; for (let j = 0; j < z.length; j++) zn += z[j] * z[j]; zn = Math.sqrt(zn) + 1e-9;
-    const scored = this.memory.map(({ s, z: m }) => {
+    const pool = label && this.memory.some(m => m.s.label === label) ? this.memory.filter(m => m.s.label === label) : this.memory;
+    const scored = pool.map(({ s, z: m }) => {
       let dot = 0, mn = 0;
       for (let j = 0; j < z.length; j++) { dot += z[j] * m[j]; mn += m[j] * m[j]; }
       return { sample: s, sim: dot / (zn * (Math.sqrt(mn) + 1e-9)) };

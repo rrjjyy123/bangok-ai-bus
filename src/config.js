@@ -84,6 +84,24 @@ export const ETHICS = [
   { name: '투명성', desc: 'AI를 썼는지, 어떻게 판단했는지, 한계가 무엇인지 알려야 해요.' },
 ];
 
+// 🎮 책임 투표(에필로그 토의용 가정 상황)
+export const POLL = {
+  q: '누비가 사고를 냈다면 누구의 책임일까요?',
+  options: ['셔틀 회사', '데이터를 모은 사람', '세종시', '타고 있던 사람', '모두 함께'],
+};
+
+// 🎮 에필로그 대사(게임 속 인물)
+export const EPILOGUE = [
+  ['nubi', '고마워요. 이제 정 할머니도, 도윤이도 잘 보여요.'],
+  ['nubi', '그래도 저는 <b>틀릴 수 있어요.</b> 그래서 사람이 함께 지켜봐 줘야 해요.'],
+  ['han', '요즘은 버스 기사 대신 자율주행차를 지켜보는 <b>원격 관제사</b>, 데이터를 모으고 이름표를 붙이는 <b>데이터 라벨러</b> 같은 새로운 직업이 생기고 있어요.'],
+  ['han', '다음 시간에는 인공지능이 우리 사회를 어떻게 바꾸는지 더 알아봐요. 오늘 정말 수고했어요!'],
+];
+
+// 교사 화면 '우리 반 데이터 지도'의 열(대상 종류)
+export const KINDS = ['child', 'adult', 'worker', 'elder', 'wheelchair', 'stroller', 'umbrella', 'dogwalker', 'cyclist', 'scooter', 'car'];
+export const KIND_SHORT = { child: '어린이', adult: '어른', worker: '회사원', elder: '어르신', wheelchair: '휠체어', stroller: '유모차', umbrella: '우산', dogwalker: '강아지 산책', cyclist: '자전거', scooter: '킥보드', car: '자동차' };
+
 // 📰 진짜 세종 이야기(현실 자료) — 교사 메뉴에서만 표시
 export const REAL_NEWS = {
   title: '세종시에는 실제로 자율주행 버스가 다녀요',

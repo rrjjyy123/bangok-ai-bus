@@ -14,13 +14,13 @@ export function mountUI(app) {
   <div id="hud" hidden>
     <div id="obj"><div class="k">현재 목표</div><div class="v" id="objText"></div>
       <div id="steps"><span data-s="1">① 데이터 모으기</span><span data-s="2">② 이름표</span><span data-s="3">③ 학습</span><span data-s="4">④ 시험 운행</span></div>
-      <div id="chips"><span class="chip game">🎮 게임 속 이야기</span><span class="chip" id="zoneChip"></span></div></div>
+      <div id="chips"><span class="chip game">🎮 게임 속 이야기</span><span class="chip" id="zoneChip"></span><span class="chip" id="roomChip" hidden></span></div></div>
     <div id="reticle"><i></i><i></i><i></i><i></i></div>
     <div id="prompt" hidden></div>
     <div id="tray"></div>
     <div id="topR">
       <canvas class="minimap" width="336" height="336"></canvas>
-      <div class="row"><button class="hbtn" data-a="result" hidden>결과</button><button class="hbtn" data-a="album">앨범 [Q]</button><button class="hbtn" data-a="menu">메뉴</button></div>
+      <div class="row"><button class="hbtn" data-a="market" hidden>🔁 거래소</button><button class="hbtn" data-a="result" hidden>결과</button><button class="hbtn" data-a="album">앨범 [Q]</button><button class="hbtn" data-a="menu">메뉴</button></div>
     </div>
     <div id="mapnote">지도 © OpenStreetMap 기여자(ODbL) · 🎮 인물과 이야기는 모두 상상입니다</div>
   </div>
@@ -37,6 +37,7 @@ export function mountUI(app) {
   <div id="dialog" hidden><div class="pt" id="dPt"></div><div class="dmain"><div id="dName"></div><div id="dText"></div><div id="dChoices" hidden></div><div id="dNext" hidden>▼ 누르기 · Space</div></div></div>
   <div id="panel" hidden><div id="panelCard"><div id="panelBody"></div><div id="panelBtns"></div></div></div>
   <div id="screen" hidden></div>
+  <div id="lock" hidden><div><div class="lk-i">✋</div><div class="lk-t">잠깐! 선생님을 봐 주세요</div><div class="lk-d">선생님이 풀어 주면 이어서 할 수 있어요.</div></div></div>
   <div id="toast" hidden></div>`);
   $('#dialog').addEventListener('click', advance);
   addEventListener('keydown', e => {

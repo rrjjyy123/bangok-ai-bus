@@ -195,6 +195,29 @@ textarea { width: 100%; font: inherit; font-size: 16px; background: #0a1220; col
 .teams button span { display: block; margin-top: 8px; font-size: 14px; color: #c3d1de; }
 .teams button:hover { border-color: var(--c); }
 
+.teams button small { display: block; margin-top: 6px; font: 600 12px/1 var(--f-mono); color: var(--ok); }
+.chip.warn { border-color: var(--bad); color: var(--bad); }
+
+/* ---------- 방 코드 · 투표 · 거래소 · 멈춤 ---------- */
+.code { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+.code span { width: 64px; height: 76px; display: grid; place-items: center; border: 2px solid var(--line); background: #0a1220; font: 400 44px/1 var(--f-display); color: var(--brt); }
+.pp.err { text-align: center; color: var(--bad); font-size: 15px; min-height: 1.7em; max-width: none; }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 360px; margin: 4px auto 0; }
+.pad button { min-height: 60px; background: var(--panel-2); border: 1px solid var(--line); font: 400 28px/1 var(--f-display); }
+.pad button:active { border-color: var(--brt); }
+.pad button.go { background: var(--brt); border-color: var(--brt); color: #1d0a02; font-size: 22px; }
+.vote { display: grid; gap: 8px; margin-top: 14px; }
+.vote button { min-height: 60px; background: var(--panel-2); border: 1px solid var(--line); font: 400 22px/1 var(--f-display); text-align: left; padding: 0 18px; }
+.vote button:hover { border-color: var(--brt); color: var(--brt); }
+.filt { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.filt button { min-height: 44px; padding: 0 16px; background: var(--panel-2); border: 1px solid var(--line); font-size: 15px; }
+.filt button.on { border-color: var(--brt); color: var(--brt); }
+.shot.got { opacity: .45; }
+#lock { position: absolute; inset: 0; z-index: 70; display: grid; place-items: center; background: rgba(4,8,16,.94); text-align: center; padding: 16px; }
+#lock .lk-i { font-size: 88px; }
+#lock .lk-t { font: 400 clamp(36px, 6vw, 64px)/1.1 var(--f-display); color: var(--brt); margin-top: 12px; }
+#lock .lk-d { color: var(--muted); font-size: 18px; margin-top: 12px; }
+
 /* ---------- 타이틀 ---------- */
 #screen > div { margin: auto; } /* 화면이 낮아도 위쪽이 잘리지 않게 */
 #screen { position: absolute; inset: 0; z-index: 50; display: flex; padding: 16px; text-align: center; overflow: auto; background: linear-gradient(180deg, rgba(10,16,32,.35), rgba(10,16,32,.85)); }
