@@ -1,0 +1,7 @@
+node_modules/
+map.osm
+.DS_Store
+Thumbs.db
+.firebase/
+*.log
+
