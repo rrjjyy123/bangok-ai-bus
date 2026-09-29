@@ -2,6 +2,12 @@
 export const $ = (s, r = document) => r.querySelector(s);
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 export const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// 받침에 맞는 조사 붙이기: josa('사람', '이/가') → '사람이', josa('자전거', '으로/로') → '자전거로'
+export function josa(w, pair) {
+  const [a, b] = pair.split('/'), c = w.charCodeAt(w.length - 1);
+  const jong = c >= 0xAC00 && c <= 0xD7A3 ? (c - 0xAC00) % 28 : 0;
+  return w + (a.startsWith('으') ? (jong && jong !== 8 ? a : b) : (jong ? a : b));
+}
 
 export function mountUI(app) {
   app.insertAdjacentHTML('beforeend', `
@@ -14,7 +20,7 @@ export function mountUI(app) {
     <div id="tray"></div>
     <div id="topR">
       <canvas class="minimap" width="336" height="336"></canvas>
-      <div class="row"><button class="hbtn" data-a="album">앨범 [Q]</button><button class="hbtn" data-a="menu">메뉴</button></div>
+      <div class="row"><button class="hbtn" data-a="result" hidden>결과</button><button class="hbtn" data-a="album">앨범 [Q]</button><button class="hbtn" data-a="menu">메뉴</button></div>
     </div>
     <div id="mapnote">지도 © OpenStreetMap 기여자(ODbL) · 🎮 인물과 이야기는 모두 상상입니다</div>
   </div>
@@ -109,7 +115,7 @@ function showDialog(who, text, opts, res) {
   const cls = typeof who === 'string' ? w[1] : 'npc';
   const name = typeof who === 'string' ? w[0] : who.name;
   const isGame = typeof who === 'string' ? w[2] : true;
-  dlg.hidden = false; dlg.className = cls;
+  dlg.hidden = false; dlg.className = cls; document.body.classList.add('dlg');
   $('#dName').innerHTML = `${esc(name)}${isGame ? ' <span class="tag game">🎮 게임 속 인물</span>' : ''}`;
   const pt = $('#dPt'); pt.className = 'pt ' + cls; pt.style.setProperty('--pt-c', typeof who === 'string' ? '' : (who.color || '#6a994e'));
   $('#dChoices').innerHTML = ''; $('#dChoices').hidden = true; $('#dNext').hidden = true;
@@ -132,7 +138,7 @@ function finishType() {
     s.opts.forEach((o, k) => { const b = document.createElement('button'); b.className = 'choice'; b.innerHTML = o; b.onclick = e => { e.stopPropagation(); if (dState !== s) return; Snd.play('blip'); dState = null; closeSoon(); s.res(k); }; box.appendChild(b); });
   } else $('#dNext').hidden = false;
 }
-function closeSoon() { setTimeout(() => { if (!dState) $('#dialog').hidden = true; }, 40); }
+function closeSoon() { setTimeout(() => { if (!dState) { $('#dialog').hidden = true; document.body.classList.remove('dlg'); } }, 40); }
 function advance() { const s = dState; if (!s) return; if (s.typing) { finishType(); return; } if (s.opts) return; dState = null; Snd.play('blip'); closeSoon(); s.res(); }
 export const talk = (who, text) => new Promise(r => showDialog(who, text, null, r));
 export const choose = (who, text, opts) => new Promise(r => showDialog(who, text, opts, r));
@@ -143,7 +149,7 @@ export function dialogOpen() { return !$('#dialog').hidden; }
 export function panel(html, buttons = [['닫기', 'pri']], { wide = false, onOpen } = {}) {
   return new Promise(res => {
     const p = $('#panel'); p.hidden = false; p.className = wide ? 'wide' : '';
-    $('#panelBody').innerHTML = html; $('#panelCard').scrollTop = 0;
+    $('#panelBody').innerHTML = html; $('#panelBody').scrollTop = 0;
     const bar = $('#panelBtns'); bar.innerHTML = '';
     const close = i => { p.hidden = true; Snd.play('blip'); res(i); };
     buttons.forEach(([label, style], i) => { const b = document.createElement('button'); b.className = 'btn ' + (style || ''); b.textContent = label; b.onclick = () => close(i); bar.appendChild(b); });

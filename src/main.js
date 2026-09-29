@@ -4,7 +4,7 @@ import { ZONES, zoneAt, ZONE_NPCS, NAMED_NPCS, TEST_SCENES, LABELS, LABEL_ICON, 
 import { buildWorld, applyLight, buildFence, updateRain, textSprite, blocked, moveRainTo, resetRain } from './world.js';
 import { makeNPC, makeExplorer, makeShuttle, TRUTH, KIND_NAME } from './npc.js';
 import { extractFeatures, flipRGBA, Classifier, IMG } from './ml.js';
-import { $, sleep, esc, mountUI, Snd, setObj, toast, fadeTo, banner, fx, talk, choose, lines, dialogOpen, panel, panelOpen } from './ui.js';
+import { $, sleep, esc, josa, mountUI, Snd, setObj, toast, fadeTo, banner, fx, talk, choose, lines, dialogOpen, panel, panelOpen } from './ui.js';
 
 const app = document.getElementById('app');
 mountUI(app);
@@ -89,8 +89,8 @@ function addNPC(kind, zid, spot, name) {
   g.userData.zone = zid;
   g.userData.name = name || null;
   if (name) {
-    const tag = textSprite(`💬 ${name}`, { size: 40, bg: 'rgba(10,16,32,0.9)', color: '#7ed98a', scale: 0.035 });
-    tag.position.set(0, kind === 'child' ? 1.9 : 2.8, 0);
+    const tag = textSprite(`💬 ${name}`, { size: 40, bg: 'rgba(10,16,32,0.9)', color: '#7ed98a', scale: 0.016 });
+    tag.position.set(0, kind === 'child' ? 2.0 : 2.9, 0);
     g.add(tag); g.userData.tag = tag;
   }
   scene.add(g); npcs.push(g);
@@ -181,7 +181,7 @@ addEventListener('blur', () => { for (const k in input.keys) input.keys[k] = fal
 app.addEventListener('click', e => {
   const b = e.target.closest('[data-a]'); if (!b || S.mode !== 'explore' || busy()) return;
   Snd.init();
-  ({ shot: takePhoto, album: openAlbum, menu: openMenu, train: openTrain, drive: startDrive, ethics: openEthics, talk: talkNearby })[b.dataset.a]?.();
+  ({ shot: takePhoto, album: openAlbum, menu: openMenu, train: openTrain, drive: startDrive, ethics: openEthics, talk: talkNearby, result: () => showResult(S.drives.length - 1) })[b.dataset.a]?.();
 });
 
 // ---------- HUD ----------
@@ -200,15 +200,18 @@ function updateHUD() {
   });
   $('[data-a="drive"]').disabled = !trained;
   $('[data-a="train"]').disabled = !canTrain();
+  $('[data-a="ethics"]').disabled = !drove;
+  $('[data-a="result"]').hidden = !drove;
   // 현재 목표
   const stale = trained && S.samples.length !== S.trainedCount;
   let o;
   if (!trained) o = canTrain() ? `사진이 모였어요! <b>학습</b>으로 누비를 공부시키거나, 사진을 더 모아도 좋아요. (${n}/${limit()})` : `사람과 탈것에 조준하고 <b>📷 찍기</b> → 이름표를 붙이세요. 이름표 2가지 이상, 6장 넘게! (${n}/${limit()})`;
   else if (stale) o = `새로 찍은 사진이 있어요. <b>학습</b>을 다시 해야 누비가 배워요.`;
   else if (!drove) o = `<b>시험 운행</b>으로 누비가 BRT 도로에서 잘 알아보는지 확인하세요.`;
-  else if (drove === 1 && !S.mapUnlocked) o = `결과에서 틀린 장면의 <b>AI 속마음</b>을 살펴보세요. 왜 틀렸을까요?`;
+  else if (drove === 1 && !S.mapUnlocked) o = `<b>결과</b> 버튼을 눌러 틀린 장면의 <b>AI 속마음</b>을 살펴보세요. 왜 틀렸을까요?`;
   else if (drove === 1) o = `공사가 끝났어요! 누비가 놓친 대상을 찾아 사진을 더 모으고 → 학습 → <b>2차 시험 운행</b>`;
-  else o = `<b>윤리원칙</b>에서 오늘 누비에게 가장 필요했던 원칙을 골라 제출하세요.`;
+  else if (!S.ethics) o = `<b>윤리원칙</b>에서 오늘 누비에게 가장 필요했던 원칙을 골라 제출하세요.`;
+  else o = `제출 완료! 선생님의 안내를 기다려 주세요.`;
   if (o !== updateHUD.last) { setObj(o); updateHUD.last = o; }
 }
 const canTrain = () => S.samples.length >= 6 && LABELS.filter(l => S.samples.some(s => s.label === l)).length >= 2;
@@ -329,10 +332,10 @@ function routeAt(d) {
   return { p: route[route.length - 1].clone(), dir: route[route.length - 1].clone().sub(route[route.length - 2]).normalize() };
 }
 const REACT = {
-  wheelchair: p => `누비야… 나를 ${p}(으)로 봤구나.`, child: p => `나 여기 있어요! 나는 ${p}(이)가 아니에요!`,
+  wheelchair: p => `누비야… 나를 ${josa(p, '으로/로')} 봤구나.`, child: p => `나 여기 있어요! 나는 ${josa(p, '이/가')} 아니에요!`,
   stroller: () => `아기가 타고 있어요! 조심해 주세요!`, elder: () => `어이쿠, 깜짝이야!`,
   dogwalker: () => `밤이라 우리가 안 보였나 봐요!`, umbrella: () => `비 오는 날에도 나를 봐 줘야지!`,
-  worker: p => `나를 ${p}(으)로 봤다고요?`, adult: p => `나는 ${p}(이)가 아니에요!`,
+  worker: p => `나를 ${josa(p, '으로/로')} 봤다고요?`, adult: p => `나는 ${josa(p, '이/가')} 아니에요!`,
 };
 let drive = null;
 async function startDrive() {
@@ -401,8 +404,8 @@ function judge() {
   fx('scanfx');
   const J = $('#judge'); J.hidden = false; J.className = correct ? 'good' : 'bad';
   const probs = Object.entries(pr.probs).sort((x, y) => y[1] - x[1]);
-  const head = correct ? (truth === '사람' ? '사람이 보여요! 멈춰서 기다릴게요.' : `${pr.label}(이)네요. 조심해서 지나갈게요.`)
-    : `${danger ? '⚠ 위험!' : '✕ 틀렸어요'} ${KIND_NAME[sc.kind]}을(를) ${pr.label}(으)로 착각했어요`;
+  const head = correct ? (truth === '사람' ? '사람이 보여요! 멈춰서 기다릴게요.' : `${josa(pr.label, '이네요/네요')}. 조심해서 지나갈게요.`)
+    : `${danger ? '⚠ 위험!' : '✕ 틀렸어요'} ${josa(KIND_NAME[sc.kind], '을/를')} ${josa(pr.label, '으로/로')} 착각했어요`;
   J.innerHTML = `<img src="${c.thumb}" alt=""><div class="eyebrow">누비의 눈 · 인식 결과</div><div class="h">${head}</div>
     <div class="bars">${probs.map(([l, v]) => `<div class="bar"><span>${LABEL_ICON[l]} ${l}</span><span class="tr"><span class="fl" style="width:${(v * 100).toFixed(0)}%;background:${LABEL_COLOR[l]}"></span></span><span class="n">${(v * 100).toFixed(0)}%</span></div>`).join('')}</div>
     ${danger && REACT[sc.kind] ? `<div class="say">🎮 ${KIND_NAME[sc.kind]}: “${REACT[sc.kind](pr.label)}”</div>` : ''}`;
@@ -442,13 +445,13 @@ async function showResult(i) {
 async function showMind(r) {
   const nn = r.clf.nearest(r.feat, 3), probs = Object.entries(r.probs).sort((a, b) => b[1] - a[1]);
   const has = S.samples.filter(s => s.kind === r.kind).length;
-  await panel(`<div class="eyebrow">AI 속마음 보기</div><div class="ph">누비는 왜 ${r.pred}(이)라고 생각했을까?</div>
+  await panel(`<div class="eyebrow">AI 속마음 보기</div><div class="ph">누비는 왜 ${josa(r.pred, '이라고/라고')} 생각했을까?</div>
     <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-top:8px">
-      <div><img class="bigshot" style="width:170px;margin:0" src="${r.thumb}" alt=""><p class="pp mono" style="font-size:13px">누비가 본 장면 · 정답 ${KIND_NAME[r.kind]}(${r.truth})</p></div>
+      <div><img class="bigshot" style="width:170px;margin:0" src="${r.thumb}" alt=""><p class="pp mono" style="font-size:13px">누비가 본 장면 · 정답 ${KIND_NAME[r.kind]}${KIND_NAME[r.kind] === r.truth ? '' : `(${r.truth})`}</p></div>
       <div style="flex:1;min-width:240px"><div class="eyebrow" style="color:var(--nubi)">누비의 판단</div><div class="bars">${probs.map(([l, v]) => `<div class="bar"><span>${LABEL_ICON[l]} ${l}</span><span class="tr"><span class="fl" style="width:${(v * 100).toFixed(0)}%;background:${LABEL_COLOR[l]}"></span></span><span class="n">${(v * 100).toFixed(0)}%</span></div>`).join('')}</div></div>
     </div>
     <div class="card"><div class="eyebrow" style="color:var(--nubi)">누비가 떠올린 가장 비슷한 우리 데이터 3장</div>
-      <div class="shots" style="grid-template-columns:repeat(3,110px)">${nn.map(n => `<div class="shot"><img src="${n.sample.thumb}" alt=""><span class="lb" style="color:${LABEL_COLOR[n.sample.label]}">${n.sample.label} · 닮음 ${(Math.max(0, n.sim) * 100).toFixed(0)}</span></div>`).join('')}</div></div>
+      <div class="shots" style="grid-template-columns:repeat(3,110px)">${nn.map(n => `<div class="shot"><img src="${n.sample.thumb}" alt=""><span class="lb" style="color:${LABEL_COLOR[n.sample.label]}">${n.sample.label} · 닮음 ${(Math.max(0, n.sim) * 100).toFixed(0)}%</span></div>`).join('')}</div></div>
     <div class="card"><b>생각해 보기</b><p class="pp">우리 데이터에 <b style="color:var(--brt)">${KIND_NAME[r.kind]}</b> 사진은 <b class="mono">${has}</b>장 있었어요. ${has ? '어떤 조건(밤·비·각도)이 달랐을까요?' : '누비는 한 번도 본 적이 없었어요. 어디에 가면 찍을 수 있을까요?'}</p></div>`,
     [['돌아가기', 'pri']], { wide: true });
 }
@@ -459,12 +462,12 @@ async function openEthics() {
   const k = await panel(`<div class="eyebrow">대한민국 인공지능 윤리원칙 · 7대 실천원칙</div><div class="ph">오늘 누비에게 가장 필요했던 원칙은?</div>
     <p class="pp" style="font-size:14px"><span class="tag real">📰 진짜 자료</span> 2026년 정부가 정한 원칙이에요.</p>
     <div class="ethics">${ETHICS.map((e, i) => `<button data-i="${i}" class="${sel === i ? 'on' : ''}"><b>${e.name}</b><span>${e.desc}</span></button>`).join('')}</div>
-    <textarea id="why" rows="2" placeholder="왜 그 원칙을 골랐나요? 한 줄로 적어 보세요.">${esc(S.ethics?.reason ?? '')}</textarea>`,
+    <textarea id="why" rows="2" placeholder="왜 그 원칙을 골랐나요? 한 줄로 적어 보세요. (이름은 쓰지 않아요)">${esc(S.ethics?.reason ?? '')}</textarea>`,
     [['닫기', ''], ['제출하기', 'pri']], { wide: true, onOpen: body => body.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { sel = +b.dataset.i; body.querySelectorAll('[data-i]').forEach(x => x.classList.toggle('on', +x.dataset.i === sel)); Snd.play('blip'); }) });
   if (k !== 1) return;
   if (sel === null) { toast('원칙 카드를 한 장 골라 주세요.'); return openEthics(); }
   S.ethics = { card: sel, reason: $('#why')?.value ?? '' };
-  Snd.play('win'); toast(`「${ETHICS[sel].name}」 제출 완료! (서버 연결 후 선생님 화면에 모여요)`, 3200);
+  updateHUD(); Snd.play('win'); toast(`「${ETHICS[sel].name}」 제출 완료! (서버 연결 후 선생님 화면에 모여요)`, 3200);
 }
 
 // ---------- 대화 ----------
@@ -483,7 +486,10 @@ async function openMenu() {
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" data-m="unlock" ${S.mapUnlocked ? 'disabled' : ''}>🚧 공사 끝! 지도 전체 개방 (+${LIMIT_BONUS}장)</button><button class="btn sm" data-m="news">📰 진짜 세종 이야기</button><button class="btn sm" data-m="team">모둠 바꾸기</button></div></div>`,
     [['처음 화면으로', ''], [Snd.on ? '소리 끄기' : '소리 켜기', ''], ['계속하기', 'pri']],
     { onOpen: (body, close) => body.querySelectorAll('[data-m]').forEach(b => b.onclick = () => close({ unlock: 10, news: 11, team: 12 }[b.dataset.m])) });
-  if (k === 0) location.reload();
+  if (k === 0) {
+    const ok = await panel(`<div class="ph">처음 화면으로 갈까요?</div><p class="pp">지금까지 모은 사진과 학습 결과가 <b style="color:var(--bad)">모두 사라져요.</b></p>`, [['아니요, 계속할래요', 'pri'], ['네, 처음으로', '']]);
+    if (ok === 1) location.reload();
+  }
   if (k === 1) Snd.toggle();
   if (k === 10) unlockMap();
   if (k === 11) showRealNews();
@@ -593,11 +599,10 @@ function placeCamera(snap) {
 }
 
 // ---------- 루프 ----------
-const clock = new THREE.Clock();
-let mmTimer = 0;
+let lastT = performance.now(), t = 0, mmTimer = 0;
 function tick() {
   requestAnimationFrame(tick);
-  const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
+  const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now; t += dt;
   for (const n of npcs) {
     const u = n.userData; if (!u.wander) continue;
     const sp = u.kind === 'cyclist' || u.kind === 'scooter' ? 0.5 : 0.35;
@@ -645,7 +650,7 @@ function tick() {
     const pr = $('#prompt');
     if (target || near) {
       pr.hidden = false;
-      pr.innerHTML = (target ? `<b>📷</b>찍을 수 있어요 · ${Math.round(target.position.distanceTo(player.position) * 1.5)}m` : '') + (target && near ? '　' : '') + (near ? `<b>T</b>${esc(near.userData.name)}와 이야기` : '');
+      pr.innerHTML = (target ? `<b>📷</b>찍을 수 있어요 · ${Math.round(target.position.distanceTo(player.position) * 1.5)}m` : '') + (target && near ? '　' : '') + (near ? `<b>T</b>${esc(josa(near.userData.name, '과/와'))} 이야기` : '');
       pr.style.pointerEvents = near ? 'auto' : 'none';
       pr.onclick = near ? () => talkNearby() : null;
     } else pr.hidden = true;

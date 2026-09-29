@@ -34,7 +34,7 @@ button:disabled { opacity: .35; cursor: default; }
 .btn.pri { background: var(--brt); border-color: var(--brt); color: #1d0a02; font-weight: 700; }
 .btn.pri:hover:not(:disabled) { filter: brightness(1.08); }
 .btn.sm { padding: 6px 12px; font-size: 14px; min-height: 36px; }
-.hbtn { background: var(--panel); border: 1px solid var(--line); padding: 10px 14px; font: 600 13px/1 var(--f-mono); color: var(--text); letter-spacing: .04em; min-height: 44px; }
+.hbtn { background: var(--panel); border: 1px solid var(--line); padding: 10px 16px; font: 600 15px/1 var(--f-body); color: var(--text); min-height: 52px; }
 .hbtn:hover:not(:disabled) { border-color: var(--brt); }
 .eyebrow { font: 600 11px/1 var(--f-mono); letter-spacing: .2em; color: var(--brt); text-transform: uppercase; }
 .mono { font-family: var(--f-mono); }
@@ -107,6 +107,8 @@ button:disabled { opacity: .35; cursor: default; }
 #tbtns { position: absolute; right: calc(20px + env(safe-area-inset-right, 0px)); bottom: calc(26px + var(--sb)); display: flex; flex-direction: column; align-items: flex-end; gap: 10px; pointer-events: auto; }
 #tbtns .row { display: flex; gap: 8px; align-items: flex-end; }
 #btnShot { width: 98px; height: 98px; border-radius: 50%; border: 2px solid var(--brt); background: rgba(255,106,61,.18); font: 400 22px/1.1 var(--f-display); color: var(--brt); touch-action: none; }
+/* 대화 중에는 누를 수 없는 조작 버튼을 숨겨 대화창과 겹치지 않게 */
+body.dlg #tbtns, body.dlg #joy, body.dlg #tray, body.dlg #prompt { visibility: hidden; }
 #btnShot.ready { background: rgba(255,106,61,.4); box-shadow: 0 0 24px rgba(255,106,61,.5); }
 
 /* ---------- 대화창 ---------- */
@@ -140,10 +142,12 @@ button:disabled { opacity: .35; cursor: default; }
 
 /* ---------- 패널 ---------- */
 #panel { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(4,8,16,.6); padding: 16px; overflow: auto; }
-#panelCard { width: min(680px, 100%); max-height: calc(100% - 8px); overflow: auto; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.6); display: flex; flex-direction: column; }
+#panelCard { width: min(680px, 100%); max-height: calc(100% - 8px); overflow: hidden; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.6); display: flex; flex-direction: column; }
 #panel.wide #panelCard { width: min(940px, 100%); }
-#panelBody { padding: 22px 24px 8px; min-width: 0; }
-#panelBtns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 12px 24px 20px; }
+#panelBody { padding: 22px 24px 8px; min-width: 0; min-height: 0; flex: 1 1 auto; overflow: auto; }
+/* 내용이 길어도 아래 버튼은 항상 보이게 */
+#panelBtns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 12px 24px 20px; flex: none; border-top: 1px solid var(--line); }
+#panelBtns:empty { display: none; }
 .ph { font: 400 32px/1.15 var(--f-display); margin: 10px 0 8px; text-wrap: balance; }
 .pp { color: #c3d1de; line-height: 1.7; font-size: 16px; max-width: 64ch; word-break: keep-all; margin: 8px 0; }
 .card { border: 1px solid var(--line); background: var(--panel-2); padding: 14px 16px; margin-top: 14px; }
@@ -169,6 +173,7 @@ button:disabled { opacity: .35; cursor: default; }
 .stats { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-end; margin-top: 8px; }
 .stats .k { font: 600 11px/1 var(--f-mono); color: var(--muted); letter-spacing: .08em; margin-top: 6px; }
 .rows { display: grid; gap: 6px; margin-top: 14px; }
+@media (min-width: 900px) { #panel.wide .rows { grid-template-columns: 1fr 1fr; } }
 .rrow { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; padding: 6px 10px 6px 6px; border: 1px solid var(--line); background: var(--panel-2); text-align: left; width: 100%; }
 .rrow img { width: 56px; height: 56px; display: block; }
 .rrow .t { font-size: 15px; line-height: 1.45; }
@@ -191,7 +196,8 @@ textarea { width: 100%; font: inherit; font-size: 16px; background: #0a1220; col
 .teams button:hover { border-color: var(--c); }
 
 /* ---------- 타이틀 ---------- */
-#screen { position: absolute; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px 16px; text-align: center; overflow: auto; background: linear-gradient(180deg, rgba(10,16,32,.35), rgba(10,16,32,.85)); }
+#screen > div { margin: auto; } /* 화면이 낮아도 위쪽이 잘리지 않게 */
+#screen { position: absolute; inset: 0; z-index: 50; display: flex; padding: 16px; text-align: center; overflow: auto; background: linear-gradient(180deg, rgba(10,16,32,.35), rgba(10,16,32,.85)); }
 .logo { font: 400 clamp(52px, 11vw, 120px)/.95 var(--f-display); background: linear-gradient(180deg, #fff 35%, #ffb59c); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 30px rgba(255,106,61,.3)); }
 .logo-sub { font: 600 12px/1 var(--f-mono); letter-spacing: .45em; color: var(--brt); margin-top: 16px; padding-left: .45em; }
 .tagline { color: #c3d1de; margin: 22px auto 0; max-width: 34em; line-height: 1.75; font-size: 16px; word-break: keep-all; }
