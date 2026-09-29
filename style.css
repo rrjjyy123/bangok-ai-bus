@@ -161,7 +161,7 @@ body.dlg #tbtns, body.dlg #joy, body.dlg #tray, body.dlg #prompt { visibility: h
 .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-top: 14px; }
 .shot { position: relative; border: 1px solid var(--line); background: #0a1220; cursor: pointer; padding: 0; }
 .shot img { width: 100%; aspect-ratio: 1; display: block; }
-.shot .lb { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(10,16,32,.8); font: 600 11px/1 var(--f-mono); padding: 5px 4px; text-align: center; }
+.shot .lb { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(10,16,32,.8); font: 600 11px/1 var(--f-mono); padding: 5px 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .shot:hover { border-color: var(--brt); }
 .bigshot { width: 220px; max-width: 100%; aspect-ratio: 1; border: 1px solid var(--line); display: block; margin: 12px auto; }
 .labels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }

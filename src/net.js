@@ -9,6 +9,7 @@ const withTimeout = (p, ms, msg) => Promise.race([p, new Promise((_, rej) => set
 
 export async function connect() {
   if (conn) return conn;
+  if (location.hostname === 'localhost' && new URLSearchParams(location.search).has('mock')) return (conn = await (await import('./net-mock.js')).connectMock());
   const [{ initializeApp }, A, D] = await withTimeout(Promise.all([
     import(CDN + 'firebase-app.js'), import(CDN + 'firebase-auth.js'), import(CDN + 'firebase-database.js'),
   ]), 10000, '서버 파일을 받지 못했어요');

@@ -28,7 +28,8 @@ const LAYER_UI = 1;
 
 // ---------- three.js ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(1.75, window.devicePixelRatio || 1));
+// 태블릿(터치 기기)은 화면 해상도를 조금 낮춰 30fps 이상 유지
+renderer.setPixelRatio(Math.min(matchMedia('(pointer: coarse)').matches ? 1.25 : 1.75, window.devicePixelRatio || 1));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 renderer.domElement.className = 'view';
@@ -486,8 +487,8 @@ async function showMind(r) {
 // ---------- 윤리원칙 ----------
 async function openEthics() {
   let sel = S.ethics?.card ?? null;
-  const k = await panel(`<div class="eyebrow">대한민국 인공지능 윤리원칙 · 7대 실천원칙</div><div class="ph">오늘 누비에게 가장 필요했던 원칙은?</div>
-    <p class="pp" style="font-size:14px"><span class="tag real">📰 진짜 자료</span> 2026년 정부가 정한 원칙이에요.</p>
+  const k = await panel(`<div class="eyebrow">대한민국 인공지능 윤리원칙 · 7대 원칙</div><div class="ph">오늘 누비에게 가장 필요했던 원칙은?</div>
+    <p class="pp" style="font-size:14px"><span class="tag real">📰 진짜 자료</span> 2026년 8월 우리나라 정부(과학기술정보통신부)가 정한 원칙이에요. 설명은 쉽게 풀어 썼어요.</p>
     <div class="ethics">${ETHICS.map((e, i) => `<button data-i="${i}" class="${sel === i ? 'on' : ''}"><b>${e.name}</b><span>${e.desc}</span></button>`).join('')}</div>
     <textarea id="why" rows="2" maxlength="120" placeholder="왜 그 원칙을 골랐나요? 한 줄로 적어 보세요. (이름은 쓰지 않아요)">${esc(S.ethics?.reason ?? '')}</textarea>`,
     [['닫기', ''], ['제출하기', 'pri']], { wide: true, onOpen: body => body.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { sel = +b.dataset.i; body.querySelectorAll('[data-i]').forEach(x => x.classList.toggle('on', +x.dataset.i === sel)); Snd.play('blip'); }) });
@@ -595,15 +596,16 @@ function joinTeam() {
   const sp = `${base}/samples/${S.team}`;
   subs.push(net.on(sp, 'child_added', (v, id) => { if (!v || S.samples.some(s => s.id === id)) return; S.samples.push(decodeSample(id, v)); updateHUD(); }));
   subs.push(net.on(sp, 'child_changed', (v, id) => { const s = S.samples.find(x => x.id === id); if (s && v) { s.label = v.label; updateHUD(); } }));
-  subs.push(net.on(sp, 'child_removed', (v, id) => { S.samples = S.samples.filter(s => s.id !== id); updateHUD(); }));
+  // 방이 통째로 지워질 때도 사진 삭제 이벤트가 오므로, 잠시 뒤 방이 남아 있을 때만 지운다(수업 뒤 혼자 이어 하기용)
+  subs.push(net.on(sp, 'child_removed', (v, id) => setTimeout(() => { if (!S.room) return; S.samples = S.samples.filter(s => s.id !== id); updateHUD(); }, 400)));
   subs.push(net.on(`${base}/meta`, 'value', onMeta));
+  if (S.meta.poll === 'open') net.get(`${base}/poll/${net.uid}`).then(v => { if (v == null) whenFree(openPoll); }).catch(() => { });
   saveSession();
 }
 function onMeta(m) {
   if (!S.room) return;
   if (!m) { // 선생님이 방을 지움
     subs.forEach(u => u()); subs = [];
-    net.remove(`rooms/${S.room}/devices/${net.uid}`).catch(() => { });
     S.room = null; S.meta = {}; forgetSession();
     $('#lock').hidden = true; $('#roomChip').hidden = true; updateHUD();
     whenFree(() => panel(`<div class="ph">수업 방이 닫혔어요</div><p class="pp">선생님이 방을 정리했어요. 지금부터는 이 기기에서 혼자 이어서 할 수 있어요.</p>`));
@@ -645,7 +647,7 @@ async function openExchange() {
         const list = items.filter(x => filter === '전체' || x.v.label === filter);
         body.querySelector('#mk').innerHTML = list.map(x => {
           const have = S.samples.some(s => s.id === newId(x));
-          return `<button class="shot ${have ? 'got' : ''}" data-k="${items.indexOf(x)}"><img src="${x.v.thumb}" alt=""><span class="lb" style="color:${LABEL_COLOR[x.v.label]}">${have ? '✓ ' : ''}${x.t}모둠 · ${x.v.label}</span></button>`;
+          return `<button class="shot ${have ? 'got' : ''}" data-k="${items.indexOf(x)}"><img src="${x.v.thumb}" alt=""><span class="lb" style="color:${LABEL_COLOR[x.v.label]}">${have ? '✓ ' : ''}${x.v.label} · ${x.t}모둠</span></button>`;
         }).join('') || '<p class="pp">아직 다른 모둠 사진이 없어요.</p>';
         body.querySelectorAll('#mk [data-k]').forEach(b => b.onclick = () => {
           const x = items[+b.dataset.k];
@@ -871,5 +873,22 @@ window.__dbg = {
     S.samples.push({ id: 'r' + S.samples.length, kind: n.userData.kind, label: n.userData.truth, zone: zn?.id, ...c });
   },
   async train() { const used = LABELS.filter(l => S.samples.some(s => s.label === l)); const c = new Classifier(used); await c.train(S.samples, { epochs: 50 }); S.clf = c; S.trainedCount = S.samples.length; updateHUD(); return c.finalAcc; },
+  // 시험 코스 12장면을 애니메이션 없이 바로 판단(리허설 점검용)
+  evalDrive() {
+    const out = []; shuttle.visible = false; this.tests = [];
+    for (const sc of TEST_SCENES) {
+      applyLight(scene, world, sc.light);
+      const { p, dir } = routeAt(sc.t * routeLen - 11), side = new THREE.Vector3(-dir.z, 0, dir.x);
+      const a = makeNPC(sc.kind); a.position.copy(routeAt(sc.t * routeLen).p).addScaledVector(side, (Math.random() < 0.5 ? -1 : 1) * (5.5 + Math.random() * 1.5));
+      const face = TRUTH[sc.kind] === '자동차' ? dir.clone().negate() : side.clone();
+      a.rotation.y = Math.atan2(face.x, face.z) + (Math.random() - 0.5) * 0.6; scene.add(a);
+      const c = capture(p.clone().addScaledVector(dir, 3.2).add(new THREE.Vector3((Math.random() - .5) * 0.4, 1.7 + Math.random() * 0.3, 0)), a.position, a.userData.aimY, a.userData.size);
+      scene.remove(a); (this.tests ||= []).push({ ...c, kind: sc.kind, label: TRUTH[sc.kind], light: sc.light });
+      if (!S.clf) continue;
+      const pr = S.clf.predict(c.feat); out.push(pr.label === TRUTH[sc.kind] ? '○' : `✕${sc.kind}→${pr.label}`);
+    }
+    applyLight(scene, world, S.curLight);
+    return { ok: out.filter(x => x === '○').length, out };
+  },
   startDrive, unlockMap, openAlbum, openTrain, openEthics, updateHUD,
 };

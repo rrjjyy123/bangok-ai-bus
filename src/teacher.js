@@ -63,7 +63,7 @@ function openRoom(code) {
   R.subs.forEach(u => u()); R.subs = [];
   Object.assign(R, { code, meta: {}, devices: {}, teams: {}, samples: {}, ethics: {}, poll: {} });
   const base = `rooms/${code}`;
-  const studentURL = `${location.origin}${location.pathname.replace(/teacher\.html$/, '')}?room=${code}`;
+  const studentURL = `${location.origin}${location.pathname.replace(/teacher\.html$/, '')}?room=${code}${location.search.includes('mock') ? '&mock=1' : ''}`;
   app.innerHTML = `<header class="t-head">
       <div class="t-code"><span>방 코드</span><b>${code}</b></div>
       <div class="t-info"><div class="t-url">학생 주소 <b>${esc(studentURL.replace(/^https?:\/\//, ''))}</b></div><div id="devCount" class="mono"></div></div>
@@ -148,18 +148,21 @@ function render() {
     const cols = [...KINDS.map(k => [k, KIND_SHORT[k], s => s.kind === k]), ['night', '🌙 밤', s => s.light === 'night'], ['rain', '🌧️ 비', s => s.light === 'rain']];
     const all = ZONES.flatMap(z => teamSamples(z.id));
     const tot = cols.map(([, , f]) => all.filter(f).length);
-    const low = cols.map((c, i) => [c[1], tot[i]]).sort((a, b) => a[1] - b[1]).slice(0, 3);
+    const named = cols.map((c, i) => [c[1], tot[i]]);
+    const zeros = named.filter(x => !x[1]).map(x => x[0]), low = named.filter(x => x[1]).sort((a, b) => a[1] - b[1]).slice(0, 3);
+    const say = zeros.length ? `우리 반 데이터에 <b>${zeros.slice(0, 5).join('·')}</b>${zeros.length > 5 ? ' 등' : ''} 사진이 <b>한 장도 없어요.</b>`
+      : `우리 반 데이터에서 ${low.map(([n, c]) => `<b>${n}</b> ${c}장`).join(', ')}이 가장 적어요.`;
     v.innerHTML = `<p class="t-lead">모둠별로 모은 사진 속 <b>대상 종류</b>예요. 빨간 칸은 한 장도 없는 곳이에요. (학생 화면에는 보이지 않는 숨은 정보)</p>
       <div class="t-scroll"><table class="t-map"><thead><tr><th></th>${cols.map(c => `<th>${c[1]}</th>`).join('')}<th>합계</th></tr></thead><tbody>
       ${ZONES.map(z => { const ss = teamSamples(z.id); return `<tr><th style="color:${z.color}">${z.id}모둠</th>${cols.map(([, , f]) => { const n = ss.filter(f).length; return `<td class="${n ? '' : 'zero'}">${n}</td>`; }).join('')}<td class="sum">${ss.length}</td></tr>`; }).join('')}
       <tr class="tot"><th>우리 반</th>${tot.map(n => `<td class="${n ? n < 4 ? 'few' : '' : 'zero'}">${n}</td>`).join('')}<td class="sum">${all.length}</td></tr></tbody></table></div>
-      ${all.length ? `<p class="t-say">📌 우리 반 데이터에 ${low.map(([n, c]) => `<b>${n}</b> 사진은 <b>${c}장</b>`).join(', ')}밖에 없어요.</p>` : ''}`;
+      ${all.length ? `<p class="t-say">📌 ${say}</p>` : ''}`;
   } else if (R.tab === 'score') {
     v.innerHTML = `<p class="t-lead">시험 운행 12장면 중 맞힌 수 (모둠에서 가장 잘한 기기 기준)</p><div class="t-bars">${ZONES.map(z => {
       const s1 = best(z.id, 's1'), s2 = best(z.id, 's2'), w = s => s ? s.ok / s.n * 100 : 0;
       return `<div class="t-brow"><b style="color:${z.color}">${z.id}모둠</b><div class="t-btrack"><div class="b1" style="width:${w(s1)}%"><span>${s1 ? `1차 ${s1.ok}` : ''}</span></div><div class="b2" style="width:${w(s2)}%"><span>${s2 ? `2차 ${s2.ok}` : ''}</span></div></div>
         <em>${s1 && s2 ? `${s2.ok - s1.ok >= 0 ? '+' : ''}${s2.ok - s1.ok}` : ''}</em></div>
-        ${s1?.missed?.length ? `<div class="t-miss">1차에 놓친 대상: ${[...new Set(s1.missed)].map(k => KIND_SHORT[k] || k).join(', ')}</div>` : ''}`;
+        ${s1?.missed ? `<div class="t-miss">1차에 놓친 대상: ${[...new Set(Object.values(s1.missed))].map(k => KIND_SHORT[k] || k).join(', ')}</div>` : ''}`;
     }).join('')}</div><p class="t-leg"><span class="k1"></span>1차 <span class="k2"></span>2차</p>`;
   } else if (R.tab === 'ethics') {
     const es = Object.values(R.ethics);
