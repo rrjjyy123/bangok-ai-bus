@@ -24,13 +24,17 @@
 - 편향 재현 확인(모둠당 36장 수집, 12장면×3회): 전 구역 골고루 33/36, 한 구역만 13~27/36. 휠체어→자동차·자전거 착각, 밤 장면 실패, 5모둠(밤만)은 낮 장면 실패.
 - 시험 운행: 보통 약 1분 30초, 빨리 약 40초.
 
-## 남은 일 (우선순위)
-1. UI 개편본 전체 흐름 점검(타이틀→…→윤리원칙), 태블릿 가로 화면에서 버튼 겹침 확인
-2. 태블릿 성능 확인(건물 182동). 느리면 pixelRatio 낮추기·나무 수 줄이기
-3. Firebase(Hosting + Realtime DB + 익명 인증): 방 코드, 같은 모둠 기기끼리 앨범 실시간 합치기, 데이터 거래소, 교사 화면(단계 제어·지도 개방·모둠 점수·우리 반 데이터 지도·윤리 카드 게시판·책임 투표), 수업 후 방 삭제
-4. GitHub 저장소 + GitHub Actions로 Firebase Hosting 배포
-5. 📰 진짜 세종 이야기 카드: 세종시 보도자료 내용으로 교체(현재 KPI뉴스 2025 기사 기반)
-6. 안정 모드(교사 숨김 스위치): 돌발 상황 때 미리 정한 결과로 진행
+## 배포·협업 (완료)
+- GitHub(비공개): rrjjyy123/bangok-ai-bus · Firebase 프로젝트 `bangok-ai-bus-1020`(세종교육청 계정) · https://bangok-ai-bus-1020.web.app (교사: /teacher.html)
+- `src/net.js` 익명 로그인 + Realtime DB(asia-southeast1). 구조: `rooms/{코드}/meta|devices|teams/{t}/dev/{uid}|samples/{t}/{id}|ethics/{uid}|poll/{uid}`. 보안 규칙 `database.rules.json`
+- 로컬 테스트: `npx serve .` 후 `/teacher.html?mock=1`, `/?mock=1` → localStorage 가짜 서버로 탭끼리 동기화(`src/net-mock.js`, localhost에서만)
+- 배포: `firebase deploy --only hosting,database` (GitHub Actions 자동 배포는 서비스 계정 키가 필요해 아직 안 함)
+- 리허설 점검: 콘솔 `__dbg.evalDrive()` — 한 구역만 3.5~7.5/12, 골고루 9.3/12, 거래소 후 +3.6(4회 평균)
+
+## 남은 일
+1. 실제 태블릿 6대 이상 동시 접속·성능 확인(터치 기기는 pixelRatio 1.25)
+2. 📰 진짜 세종 이야기 카드: 세종시 보도자료 내용으로 교체(현재 KPI뉴스 2025 기사 기반)
+3. GitHub Actions → Firebase Hosting 자동 배포(원하면)
 
 ## 기획 문서
 - PRD: `PRD_반곡AI버스훈련소_v2.md`(같은 폴더에 두면 참고)
