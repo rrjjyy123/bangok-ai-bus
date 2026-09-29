@@ -1,7 +1,7 @@
 // 반곡 AI 버스 훈련소 — 메인
 import * as THREE from 'three';
 import { ZONES, zoneAt, ZONE_NPCS, NAMED_NPCS, TEST_SCENES, LABELS, LABEL_ICON, LIMIT_FIRST, LIMIT_BONUS, DIALOG, ETHICS, REAL_NEWS, POLL, EPILOGUE } from './config.js';
-import { connect, packFeat, unpackFeat } from './net.js';
+import { connect, packFeat, unpackFeat, FRESH_MS } from './net.js';
 import { buildWorld, applyLight, buildFence, updateRain, textSprite, blocked, moveRainTo, resetRain } from './world.js';
 import { makeNPC, makeExplorer, makeShuttle, TRUTH, KIND_NAME } from './npc.js';
 import { extractFeatures, flipRGBA, Classifier, IMG } from './ml.js';
@@ -577,7 +577,7 @@ async function enterRoom(code) {
   try {
     net = await connect();
     const meta = await net.get(`rooms/${code}/meta`);
-    if (!meta) return '그런 방이 없어요. 번호를 다시 확인해 주세요.';
+    if (!meta || meta.closing) return '그런 방이 없어요. 번호를 다시 확인해 주세요.';
     S.room = code; S.meta = meta;
     return true;
   } catch (e) {
@@ -604,7 +604,7 @@ function joinTeam() {
 }
 function onMeta(m) {
   if (!S.room) return;
-  if (!m) { // 선생님이 방을 지움
+  if (!m || m.closing) { // 선생님이 방을 지움(지우기 직전에 closing 표시가 먼저 온다)
     subs.forEach(u => u()); subs = [];
     S.room = null; S.meta = {}; forgetSession();
     $('#lock').hidden = true; $('#roomChip').hidden = true; updateHUD();
@@ -729,7 +729,7 @@ async function askRoom() {
 }
 async function pickTeam() {
   let counts = {};
-  if (online()) { try { Object.values(await net.get(`rooms/${S.room}/devices`) || {}).forEach(d => counts[d.team] = (counts[d.team] || 0) + 1); } catch (e) { } }
+  if (online()) { try { Object.values(await net.get(`rooms/${S.room}/devices`) || {}).filter(d => Date.now() - (d.ts || 0) < FRESH_MS).forEach(d => counts[d.team] = (counts[d.team] || 0) + 1); } catch (e) { } }
   const k = await panel(`<div class="eyebrow">탐험대 편성${online() ? ` · 방 ${S.room}` : ' · 혼자 하기'}</div><div class="ph">우리 모둠을 골라요</div>
     <p class="pp">모둠마다 먼저 조사할 구역이 달라요.${online() ? ' 같은 모둠 기기끼리는 사진이 함께 모여요.' : ''}</p>
     <div class="teams">${ZONES.map(z => `<button data-t="${z.id}" style="--c:${z.color}"><b>${z.id}모둠</b><span>${z.name}${z.light === 'night' ? ' · 🌙 밤' : z.light === 'rain' ? ' · 🌧️ 비' : ''}</span>${counts[z.id] ? `<small>📱 ${counts[z.id]}대 접속 중</small>` : ''}</button>`).join('')}</div>`,

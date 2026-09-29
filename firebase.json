@@ -3,7 +3,7 @@
     "public": ".",
     "ignore": [
       "firebase.json",
-      "database.rules.json",
+      "firestore.rules",
       "**/.*",
       "**/node_modules/**",
       "map.osm",
@@ -16,8 +16,10 @@
       { "source": "vendor/**", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }] }
     ]
   },
-  "database": {
-    "rules": "database.rules.json"
+  "firestore": {
+    "rules": "firestore.rules",
+    "database": "(default)",
+    "location": "asia-northeast3"
   },
   "auth": {
     "providers": {

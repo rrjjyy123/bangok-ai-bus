@@ -1,5 +1,5 @@
 // 선생님 화면(전자칠판) — 방 만들기, 단계 제어, 모둠 현황, 우리 반 데이터 지도, 점수 비교, 윤리 카드, 책임 투표
-import { connect } from './net.js';
+import { connect, FRESH_MS } from './net.js';
 import { ZONES, LABELS, LABEL_ICON, ETHICS, POLL, EPILOGUE, KINDS, KIND_SHORT } from './config.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -26,7 +26,7 @@ async function showStart() {
   const list = [];
   for (const code of myRooms()) {
     const meta = await net.get(`rooms/${code}/meta`).catch(() => null);
-    if (meta && meta.teacherUid === net.uid) list.push({ code, meta });
+    if (meta && !meta.closing && meta.teacherUid === net.uid) list.push({ code, meta });
   }
   saveRooms(list.map(r => r.code));
   app.innerHTML = `<div class="t-start">
@@ -83,6 +83,7 @@ function openRoom(code) {
   $('#delRoom').onclick = async () => {
     if (!confirm(`방 ${code}을(를) 삭제할까요? 학생 기기는 혼자 하기로 바뀌고, 모은 사진과 기록이 모두 지워져요.`)) return;
     R.subs.forEach(u => u()); R.subs = [];
+    toast('방을 정리하는 중이에요…', 6000); $('#delRoom').disabled = true;
     await net.remove(base); saveRooms(myRooms().filter(c => c !== code)); toast('방을 삭제했어요.'); showStart();
   };
   const on = (p, ev, cb) => R.subs.push(net.on(p, ev, cb));
@@ -129,12 +130,14 @@ function renderCtrl() {
 let rsT = 0;
 function renderSoon() { clearTimeout(rsT); rsT = setTimeout(render, 150); }
 const teamSamples = t => Object.values(R.samples[t] || {});
-const devsOf = t => Object.values(R.devices).filter(d => d.team === t).length;
+const liveDevs = () => Object.values(R.devices).filter(d => Date.now() - (d.ts || 0) < FRESH_MS);
+const devsOf = t => liveDevs().filter(d => d.team === t).length;
+setInterval(() => R.code && render(), 20000); // 끊긴 기기 수를 주기적으로 반영
 const devRecs = t => Object.values(R.teams[t]?.dev || {});
 const best = (t, k) => { const v = devRecs(t).map(d => d[k]).filter(Boolean); return v.length ? v.reduce((a, b) => (b.ok > a.ok ? b : a)) : null; };
 function render() {
   if (!R.code || !$('#view')) return;
-  $('#devCount').textContent = `📱 접속한 기기 ${Object.keys(R.devices).length}대`;
+  $('#devCount').textContent = `📱 접속한 기기 ${liveDevs().length}대`;
   app.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === R.tab));
   const v = $('#view');
   if (R.tab === 'status') v.innerHTML = `<div class="t-grid">${ZONES.map(z => {

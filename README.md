@@ -30,7 +30,7 @@
 ## 지키는 것
 - 🎮 게임(가상 인물·이야기)과 📰 진짜 자료를 화면에 구분해 표시. 실존 상호명 없음. 지도 출처(© OpenStreetMap 기여자, ODbL) 표기.
 - 학생 이름·얼굴·위치를 수집하지 않는다(태블릿 카메라 사용 안 함). 서버에는 게임 속 3D 장면 썸네일, 특징값, 이름표, 윤리 카드 이유(120자, "이름은 쓰지 않아요" 안내)만 저장.
-- 보안 규칙(`database.rules.json`): 익명 로그인 필수, 방 설정은 만든 선생님만, 사진 크기 제한, 방 삭제는 선생님만.
+- 보안 규칙(`firestore.rules`): 익명 로그인 필수, 방 설정·삭제는 만든 선생님만, 사진 크기 제한, 기기·투표·윤리 카드는 자기 것만. (실서버에서 다른 사용자의 방 설정 변경·삭제·남의 기기 흉내가 막히는 것 확인)
 
 ## 리허설 점검 결과(자동 측정, 사진 36장·시험 12장면·4회 평균)
 | 데이터 | 맞힌 장면 |
@@ -44,7 +44,7 @@
 ## 개발
 정적 파일(빌드 없음, ES 모듈 + importmap). 로컬 실행: `npx serve .`
 - `src/main.js` 게임 흐름·촬영·학습·시험 운행·AI 속마음·방 참여/동기화
-- `src/net.js` Firebase 연결(익명 로그인, Realtime Database), 특징값 압축
+- `src/net.js` Firebase 연결(익명 로그인, Cloud Firestore 서울 리전), 특징값 압축 · `src/net-mock.js` 로컬 테스트용 가짜 서버(`?mock=1`, localhost만)
 - `src/teacher.js` + `teacher.html` 선생님 화면
 - `src/ml.js` 자체 머신러닝(HOG+색 특징 → 작은 신경망)
 - `src/world.js` · `src/npc.js` 지도 3D·NPC, `src/config.js` 구역·장면·대사·윤리원칙·투표
@@ -52,5 +52,5 @@
 
 배포(Firebase 프로젝트 `bangok-ai-bus-1020`):
 ```
-firebase deploy --only hosting,database
+firebase deploy --only hosting,firestore
 ```

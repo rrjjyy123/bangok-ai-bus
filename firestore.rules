@@ -1,0 +1,50 @@
+rules_version = '2';
+// 반곡 AI 버스 훈련소 — Firestore 보안 규칙
+// 익명 로그인 필수 · 방 설정은 만든 선생님만 · 사진 크기 제한 · 방 정리는 선생님만
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /rooms/{code} {
+      function signedIn() { return request.auth != null; }
+      function room() { return get(/databases/$(database)/documents/rooms/$(code)); }
+      function roomExists() { return exists(/databases/$(database)/documents/rooms/$(code)); }
+      function isTeacher() { return signedIn() && room().data.teacherUid == request.auth.uid; }
+
+      allow read: if signedIn();
+      allow create: if signedIn() && code.matches('^[0-9]{4}$') && request.resource.data.teacherUid == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.teacherUid == request.auth.uid;
+
+      match /devices/{uid} {
+        allow read: if signedIn();
+        allow create, update: if signedIn() && request.auth.uid == uid && roomExists();
+        allow delete: if (signedIn() && request.auth.uid == uid) || isTeacher();
+      }
+      match /samples/{id} {
+        allow read: if signedIn();
+        allow create, update: if signedIn() && roomExists()
+          && request.resource.data.team is int && request.resource.data.team >= 1 && request.resource.data.team <= 6
+          && request.resource.data.label in ['사람', '자전거', '킥보드', '자동차']
+          && request.resource.data.thumb is string && request.resource.data.thumb.size() < 20000
+          && request.resource.data.f is string && request.resource.data.f.size() < 4000
+          && request.resource.data.ff is string && request.resource.data.ff.size() < 4000;
+        allow delete: if signedIn();
+      }
+      match /dev/{id} {
+        allow read: if signedIn();
+        allow create, update: if signedIn() && roomExists() && id.matches('^[1-6]_' + request.auth.uid + '$');
+        allow delete: if isTeacher();
+      }
+      match /ethics/{uid} {
+        allow read: if signedIn();
+        allow create, update: if signedIn() && request.auth.uid == uid && roomExists()
+          && request.resource.data.card is int && request.resource.data.reason is string && request.resource.data.reason.size() <= 120;
+        allow delete: if isTeacher();
+      }
+      match /poll/{uid} {
+        allow read: if signedIn();
+        allow create, update: if signedIn() && request.auth.uid == uid && roomExists()
+          && request.resource.data.v is int && request.resource.data.v >= 0 && request.resource.data.v <= 4;
+        allow delete: if isTeacher();
+      }
+    }
+  }
+}

@@ -26,9 +26,9 @@
 
 ## 배포·협업 (완료)
 - GitHub(비공개): rrjjyy123/bangok-ai-bus · Firebase 프로젝트 `bangok-ai-bus-1020`(세종교육청 계정) · https://bangok-ai-bus-1020.web.app (교사: /teacher.html)
-- `src/net.js` 익명 로그인 + Realtime DB(asia-southeast1). 구조: `rooms/{코드}/meta|devices|teams/{t}/dev/{uid}|samples/{t}/{id}|ethics/{uid}|poll/{uid}`. 보안 규칙 `database.rules.json`
+- `src/net.js` 익명 로그인 + Cloud Firestore(asia-northeast3 서울). 게임 코드는 `rooms/{코드}/…` 경로로 쓰고 net.js가 문서로 바꿈: `rooms/{c}`(meta) · `devices/{uid}`(30초 하트비트, 90초 지나면 끊김) · `samples/{id}`(team 필드) · `dev/{t}_{uid}` · `ethics/{uid}` · `poll/{uid}`. 방 삭제는 `closing` 표시 → 하위 문서 → 방 순서. 보안 규칙 `firestore.rules`
 - 로컬 테스트: `npx serve .` 후 `/teacher.html?mock=1`, `/?mock=1` → localStorage 가짜 서버로 탭끼리 동기화(`src/net-mock.js`, localhost에서만)
-- 배포: `firebase deploy --only hosting,database` (GitHub Actions 자동 배포는 서비스 계정 키가 필요해 아직 안 함)
+- 배포: `firebase deploy --only hosting,firestore` (GitHub Actions 자동 배포는 서비스 계정 키가 필요해 아직 안 함)
 - 리허설 점검: 콘솔 `__dbg.evalDrive()` — 한 구역만 3.5~7.5/12, 골고루 9.3/12, 거래소 후 +3.6(4회 평균)
 
 ## 남은 일
